@@ -11,6 +11,7 @@ try {
 
 try {
     $sql = file_get_contents('setup/schema.sql');
+    
     $pdo->exec($sql);
     echo "Database schema created successfully!";
 } catch (PDOException $e) {
