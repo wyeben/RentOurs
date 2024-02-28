@@ -8,23 +8,22 @@ class UserImage {
         $this->imageData = $imageData;
         $this->user = $user;
     }
-
+    
     public function getImageData() {
         return $this->imageData;
     }
-
-    public function setImageData($imageData) {
-        $this->imageData = $imageData;
-    }
-
+    
     public function getUser() {
         return $this->user;
     }
-
+    
+    public function setImageData($imageData) {
+        $this->imageData = $imageData;
+    }
+    
     public function setUser($user) {
         $this->user = $user;
     }
 }
-
 
 ?>

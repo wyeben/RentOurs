@@ -3,23 +3,32 @@
 abstract class User {
     private $security;
     private $profile;
-    private $accountType; 
     
-    public function __construct($security, $profile, $accountType) {
+    public function __construct($security, $profile) {
         $this->security = $security;
         $this->profile = $profile;
-        $this->accountType = $accountType;
-    }
-    
-    public static function createAccount($security, $profile, $accountType) {
-        return new User($security, $profile, $accountType);
-    }
-    
-    public function getAccountType() {
-        return $this->accountType;
     }
     
     public function login($username, $password) {
+    }
+    
+    public function logout() {
+    }
+    
+    public function getSecurity() {
+        return $this->security;
+    }
+    
+    public function getProfile() {
+        return $this->profile;
+    }
+    
+    public function setSecurity($security) {
+        $this->security = $security;
+    }
+    
+    public function setProfile($profile) {
+        $this->profile = $profile;
     }
 }
 
