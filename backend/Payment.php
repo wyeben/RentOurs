@@ -14,11 +14,9 @@ class Payment {
     }
     
     public function processPayment() {
-        // Implementation
     }
     
     public function refundPayment() {
-        // Implementation
     }
     
     public function getAmount() {

@@ -1,6 +1,7 @@
 <?php
 
 class Car {
+    private $id;
     private $make;
     private $model;
     private $year;
@@ -15,12 +16,18 @@ class Car {
         $this->year = $year;
         $this->type = $type;
         $this->availability = $availability;
+        $this->id = uniqid('car_');
+
     }
     
     public function uploadImage($imageData) {
     }
     
     public function addFeature($feature) {
+    }
+
+    public function getId() {
+        return $this->id;
     }
     
     public function getMake() {

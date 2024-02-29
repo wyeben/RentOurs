@@ -13,7 +13,6 @@ class Rental {
     }
     
     public function removeBooking($booking) {
-        // Implementation
     }
     
     public function getCar() {

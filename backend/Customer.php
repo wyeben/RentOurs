@@ -4,12 +4,15 @@ require_once 'User.php';
 require_once 'Booking.php'; 
 
 class Customer extends User {
+    private $id;
     private $profile;
     private $booking = [];
     private $review = [];
     
     public function __construct($security, $profile) {
         parent::__construct($security, $profile);
+        $this->id = uniqid('customer_');
+
     }
     
     public function searchForCars($criteria) {
@@ -61,6 +64,10 @@ class Customer extends User {
     
     public function getBooking() {
         return $this->booking;
+    }
+
+    public function getId() {
+        return $this->id;
     }
     
     public function getReview() {

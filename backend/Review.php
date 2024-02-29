@@ -14,11 +14,9 @@ class Review {
     }
     
     public function editReview() {
-        // Implementation
     }
     
     public function deleteReview() {
-        // Implementation
     }
     
     public function getAuthor() {
