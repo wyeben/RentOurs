@@ -83,7 +83,7 @@ class Customer extends User {
     }
     
     public function setBooking($booking) {
-        
+    
         $this->booking = $booking;
     }
     
