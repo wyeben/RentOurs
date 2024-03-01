@@ -48,7 +48,6 @@ function registerUser($username, $password, $role, $user_type) {
 function authenticateUser($username, $password) {
     global $pdo;
 
-
     $stmt = $pdo->prepare("SELECT * FROM Users WHERE username = :username");
 
     $stmt->bindParam(':username', $username);
