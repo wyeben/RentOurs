@@ -18,11 +18,27 @@ class Booking {
     public function cancelBooking() {
     }
 
-    public function bookCar() {
-        echo "Booking car '{$this->car->getMake()} {$this->car->getModel()}'
-         for '{$this->customer->getName()}' from {$this->pickupDate} to {$this->dropOffDate}.\n";
-        echo "Total price: {$this->price}\n";
+    public function bookCar($pdo) {
+        function extractID($entityID) {
+            preg_match('/\d+/', $entityID, $matches);
+            return $matches[0];
+        }
+    
+        if ($pdo) {
+            $customerID = extractID($this->customer->getId());
+            $carID = extractID($this->car->getId());
+    
+            $stmt = $pdo->prepare("INSERT INTO bookings (customer_id, car_id, pickup_date, dropoff_date, price) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$customerID, $carID, $this->pickupDate, $this->dropOffDate, $this->price]);
+    
+            echo "Booking confirmed successfully.";
+        } else {
+            echo "PDO object is null.";
+        }
     }
+    
+    
+    
     
     public function getCustomer() {
         return $this->customer;

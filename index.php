@@ -1,4 +1,5 @@
 <?php
+
 require_once 'backend/User.php';
 require_once 'backend/Customer.php';
 require_once 'backend/Company.php';
@@ -20,35 +21,214 @@ require_once 'backend/UserImage.php';
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $data = json_decode(file_get_contents("php://input"));
+require_once 'setup/config.php';
+extract($db_config);
+$pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    if (!isset($data->security) || !isset($data->profile) || !isset($data->car) || !isset($data->pickupDate) || !isset($data->dropoffDate) || !isset($data->price)) {
-        http_response_code(400); 
-        echo json_encode(array("message" => "Missing required parameters"));
+function registerUser($username, $password, $role, $user_type) {
+    global $pdo;
+    
+    $stmt = $pdo->prepare("INSERT INTO Users (username, password, role, user_type) VALUES (:username, :password, :role, :user_type)");
+
+    $stmt->bindParam(':username', $username);
+    $stmt->bindParam(':password', $password);
+    $stmt->bindParam(':role', $role);
+    $stmt->bindParam(':user_type', $user_type);
+
+    $stmt->execute();
+
+    if ($stmt->rowCount() > 0) {
+        return true; 
     } else {
-        $securityData = $data->security;
-        $security = new Security($securityData->username, $securityData->password, $securityData->isActive);
+        return false; 
+    }
+}
 
-        $profileData = $data->profile;
-        $profile = new Profile($profileData->name, $profileData->address, $profileData->additionalInfo);
+function authenticateUser($username, $password) {
+    global $pdo;
 
-        $customer = new Customer($security, $profile);
+    $stmt = $pdo->prepare("SELECT * FROM Users WHERE username = :username");
 
-        $carData = $data->car;
-        $car = new Car($carData->make, $carData->model, $carData->year, $carData->type, $carData->availability);
+    $stmt->bindParam(':username', $username);
 
-        $pickupDate = $data->pickupDate;
-        $dropoffDate = $data->dropoffDate;
-        $price = $data->price;
-        $booking = new Booking($customer, $car, $pickupDate, $dropoffDate, $price);
+    $stmt->execute();
 
-        $booking->bookCar();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        echo json_encode(array("message" => "Booking confirmed"));
+    if ($user && password_verify($password, $user['password'])) {
+        return $user; 
+    } else {
+        return false; 
+    }
+}
+
+function bookCar($customerId, $carId, $pickupDate, $dropoffDate, $price) {
+    global $pdo;
+    
+    $stmt = $pdo->prepare("INSERT INTO bookings (customer_id, car_id, pickup_date, dropoff_date, price) VALUES (:customerId, :carId, :pickupDate, :dropoffDate, :price)");
+
+    $stmt->bindParam(':customerId', $customerId);
+    $stmt->bindParam(':carId', $carId);
+    $stmt->bindParam(':pickupDate', $pickupDate);
+    $stmt->bindParam(':dropoffDate', $dropoffDate);
+    $stmt->bindParam(':price', $price);
+
+    $stmt->execute();
+
+    if ($stmt->rowCount() > 0) {
+        return true; 
+    } else {
+        return false; 
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    try {
+        $data = json_decode(file_get_contents("php://input"));
+
+        if (!isset($data->action)) {
+            http_response_code(400); 
+            echo json_encode(array("message" => "Missing action parameter"));
+        } else {
+            $action = $data->action;
+
+            if ($action == "register") {
+                if (!isset($data->username) || !isset($data->password) || !isset($data->role) || !isset($data->user_type)) {
+                    http_response_code(400); 
+                    echo json_encode(array("message" => "Missing required parameters"));
+                } else {
+                    if (registerUser($data->username, password_hash($data->password, PASSWORD_DEFAULT), $data->role, $data->user_type)) {
+                        echo json_encode(array("message" => "Registration successful"));
+                    } else {
+                        http_response_code(500); 
+                        echo json_encode(array("message" => "Registration failed"));
+                    }
+                }
+            } elseif ($action == "login") {
+                if (!isset($data->username) || !isset($data->password)) {
+                    http_response_code(400); 
+                    echo json_encode(array("message" => "Missing required parameters"));
+                } else {
+                    $user = authenticateUser($data->username, $data->password);
+                    if ($user) {
+                        echo json_encode(array("message" => "Login successful", "user" => $user));
+                    } else {
+                        http_response_code(401); 
+                        echo json_encode(array("message" => "Login failed"));
+                    }
+                }
+            } elseif ($action == "bookCar") {
+                if (!isset($data->customerId) || !isset($data->carId) || !isset($data->pickupDate) || !isset($data->dropoffDate) || !isset($data->price)) {
+                    http_response_code(400); 
+                    echo json_encode(array("message" => "Missing required parameters"));
+                } else {
+                    if (bookCar($data->customerId, $data->carId, $data->pickupDate, $data->dropoffDate, $data->price)) {
+                        echo json_encode(array("message" => "Car booked successfully"));
+                    } else {
+                        http_response_code(500); 
+                        echo json_encode(array("message" => "Failed to book car"));
+                    }
+                }
+            } elseif ($action == "logout") {
+                session_start();
+                session_unset();
+                session_destroy();
+                echo json_encode(array("message" => "Logout successful"));
+            } else {
+                http_response_code(400); 
+                echo json_encode(array("message" => "Invalid action"));
+            }
+        }
+    } catch (Exception $e) {
+        http_response_code(500); 
+        echo json_encode(array("message" => "Internal Server Error: " . $e->getMessage()));
     }
 } else {
     http_response_code(405); 
     echo json_encode(array("message" => "Method not allowed"));
 }
-?>
+
+function postCar($userId, $make, $model, $year, $type, $availability, $paymentAmount) {
+    global $pdo;
+    
+    $stmt = $pdo->prepare("SELECT role, user_type FROM users WHERE id = :userId");
+    $stmt->bindParam(':userId', $userId);
+    $stmt->execute();
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$userData || $userData['role'] !== 'customer' || $userData['user_type'] !== 'individual') {
+        return "User is not eligible to post a car.";
+    }
+
+    $paymentSuccessful = true; 
+    if (!$paymentSuccessful) {
+        return "Payment failed. Car listing not posted.";
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO payments (user_id, amount) VALUES (:userId, :amount)");
+    $stmt->bindParam(':userId', $userId);
+    $stmt->bindParam(':amount', $paymentAmount);
+    $stmt->execute();
+
+    $stmt = $pdo->prepare("INSERT INTO cars (user_id, make, model, year, type, availability) VALUES (:userId, :make, :model, :year, :type, :availability)");
+    $stmt->bindParam(':userId', $userId);
+    $stmt->bindParam(':make', $make);
+    $stmt->bindParam(':model', $model);
+    $stmt->bindParam(':year', $year);
+    $stmt->bindParam(':type', $type);
+    $stmt->bindParam(':availability', $availability);
+    $stmt->execute();
+
+    return "Car listing posted successfully.";
+}
+
+function searchAvailableCars($make, $model, $year) {
+    global $pdo;
+    
+    $query = "SELECT * FROM cars WHERE availability = 1";
+    $params = [];
+    
+    if (!empty($make)) {
+        $query .= " AND make = :make";
+        $params[':make'] = $make;
+    }
+    
+    if (!empty($model)) {
+        $query .= " AND model = :model";
+        $params[':model'] = $model;
+    }
+    
+    if (!empty($year)) {
+        $query .= " AND year = :year";
+        $params[':year'] = $year;
+    }
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'postCar') {
+    session_start();
+    $userId = $_SESSION['user_id']; 
+
+    $make = $_POST['make'];
+    $model = $_POST['model'];
+    $year = $_POST['year'];
+    $type = $_POST['type'];
+    $availability = $_POST['availability'];
+    
+    $paymentAmount = $_POST['payment_amount']; 
+
+    echo postCar($userId, $make, $model, $year, $type, $availability, $paymentAmount);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'searchCars') {
+    $make = isset($_GET['make']) ? $_GET['make'] : null;
+    $model = isset($_GET['model']) ? $_GET['model'] : null;
+    $year = isset($_GET['year']) ? $_GET['year'] : null;
+
+    $results = searchAvailableCars($make, $model, $year);
+    echo json_encode($results);
+}
