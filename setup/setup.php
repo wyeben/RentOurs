@@ -30,12 +30,15 @@ try {
     
     CREATE TABLE IF NOT EXISTS Cars (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT, 
         make VARCHAR(50) NOT NULL,
         model VARCHAR(50) NOT NULL,
         year INT NOT NULL,
         type VARCHAR(50) NOT NULL,
-        availability BOOLEAN NOT NULL
+        availability BOOLEAN NOT NULL,
+        payment_amount DECIMAL(10, 2)
     );
+    
     
     CREATE TABLE IF NOT EXISTS Bookings (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,

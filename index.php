@@ -47,7 +47,7 @@ function registerUser($username, $password, $role, $user_type) {
 
 function authenticateUser($username, $password) {
     global $pdo;
-    
+
 
     $stmt = $pdo->prepare("SELECT * FROM Users WHERE username = :username");
 
@@ -113,6 +113,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     $user = authenticateUser($data->username, $data->password);
                     if ($user) {
+                        session_start();
+
+                        $_SESSION['user_id'] = $user['id'];
+                        exit();
                         echo json_encode(array("message" => "Login successful", "user" => $user));
                     } else {
                         http_response_code(401); 
@@ -136,7 +140,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 session_unset();
                 session_destroy();
                 echo json_encode(array("message" => "Logout successful"));
-            } else {
+            } elseif ($action == 'postCar') {
+                    session_start();
+                    if (!isset($_SESSION['user_id'])) {
+                        http_response_code(400);
+                        echo json_encode(array("message" => "User ID not found in session. Please log in."));
+                        return;
+                    }
+                    $userId = $_SESSION['user_id'];
+                
+                    $requiredParams = array("make", "model", "year", "type", "availability", "payment_amount");
+                    $missingParams = array_diff($requiredParams, array_keys((array) $data));
+                
+                    if (!empty($missingParams)) {
+                        http_response_code(400);
+                        echo json_encode(array("message" => "Missing required parameters: " . implode(", ", $missingParams)));
+                    } else {
+                        $make = $data->make;
+                        $model = $data->model;
+                        $year = $data->year;
+                        $type = $data->type;
+                        $availability = $data->availability;
+                        $paymentAmount = $data->payment_amount;
+                
+                        postCar($userId, $make, $model, $year, $type, $availability, $paymentAmount);
+                    }
+                
+            }
+            else {
                 http_response_code(400); 
                 echo json_encode(array("message" => "Invalid action"));
             }
@@ -145,25 +176,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         http_response_code(500); 
         echo json_encode(array("message" => "Internal Server Error: " . $e->getMessage()));
     }
+} elseif ($_SERVER["REQUEST_METHOD"] == "GET") {
+    if ($_GET['action'] == 'searchCars') {
+        $make = isset($_GET['make']) ? $_GET['make'] : null;
+        $model = isset($_GET['model']) ? $_GET['model'] : null;
+        $year = isset($_GET['year']) ? $_GET['year'] : null;
+    
+        $results = searchAvailableCars($make, $model, $year);
+        echo json_encode($results);
+    } else {
+        http_response_code(405); 
+        echo json_encode(array("message" => "Method not allowed"));
+    }
 } else {
     http_response_code(405); 
     echo json_encode(array("message" => "Method not allowed"));
 }
 
-function postCar($userId, $make, $model, $year, $type, $availability, $paymentAmount) {
+function postCar($make, $model, $year, $type, $availability, $paymentAmount) {
     global $pdo;
     
+    session_start();
+    if (!isset($_SESSION['user_id'])) {
+        return "User ID not found in session. Please log in.";
+    }
+    $userId = $_SESSION['user_id'];
     $stmt = $pdo->prepare("SELECT role, user_type FROM users WHERE id = :userId");
     $stmt->bindParam(':userId', $userId);
     $stmt->execute();
     $userData = $stmt->fetch(PDO::FETCH_ASSOC);
+    
     if (!$userData || $userData['role'] !== 'customer' || $userData['user_type'] !== 'individual') {
-        return "User is not eligible to post a car.";
+        http_response_code(403); 
+        echo json_encode(array("message" => "User is not eligible to post a car."));
+        return;
     }
 
     $paymentSuccessful = true; 
     if (!$paymentSuccessful) {
-        return "Payment failed. Car listing not posted.";
+        http_response_code(400); 
+        echo json_encode(array("message" => "Payment failed. Car listing not posted."));
+        return;
     }
 
     $stmt = $pdo->prepare("INSERT INTO payments (user_id, amount) VALUES (:userId, :amount)");
@@ -171,17 +224,21 @@ function postCar($userId, $make, $model, $year, $type, $availability, $paymentAm
     $stmt->bindParam(':amount', $paymentAmount);
     $stmt->execute();
 
-    $stmt = $pdo->prepare("INSERT INTO cars (user_id, make, model, year, type, availability) VALUES (:userId, :make, :model, :year, :type, :availability)");
+    $stmt = $pdo->prepare("INSERT INTO cars (user_id, make, model, year, type, availability, payment_amount) VALUES (:userId, :make, :model, :year, :type, :availability, :paymentAmount)");
     $stmt->bindParam(':userId', $userId);
     $stmt->bindParam(':make', $make);
     $stmt->bindParam(':model', $model);
     $stmt->bindParam(':year', $year);
     $stmt->bindParam(':type', $type);
     $stmt->bindParam(':availability', $availability);
+    $stmt->bindParam(':paymentAmount', $paymentAmount);
     $stmt->execute();
 
-    return "Car listing posted successfully.";
+    http_response_code(201); 
+    echo json_encode(array("message" => "Car listing posted successfully."));
 }
+
+
 
 function searchAvailableCars($make, $model, $year) {
     global $pdo;
@@ -210,26 +267,3 @@ function searchAvailableCars($make, $model, $year) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'postCar') {
-    session_start();
-    $userId = $_SESSION['user_id']; 
-
-    $make = $_POST['make'];
-    $model = $_POST['model'];
-    $year = $_POST['year'];
-    $type = $_POST['type'];
-    $availability = $_POST['availability'];
-    
-    $paymentAmount = $_POST['payment_amount']; 
-
-    echo postCar($userId, $make, $model, $year, $type, $availability, $paymentAmount);
-}
-
-if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'searchCars') {
-    $make = isset($_GET['make']) ? $_GET['make'] : null;
-    $model = isset($_GET['model']) ? $_GET['model'] : null;
-    $year = isset($_GET['year']) ? $_GET['year'] : null;
-
-    $results = searchAvailableCars($make, $model, $year);
-    echo json_encode($results);
-}
