@@ -262,7 +262,7 @@ function searchAvailableCars($make, $model, $year) {
     }
     
     $stmt = $pdo->prepare($query);
-    
+
     $stmt->execute($params);
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
