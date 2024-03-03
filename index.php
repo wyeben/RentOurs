@@ -116,8 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         session_start();
 
                         $_SESSION['user_id'] = $user['id'];
-                        exit();
-                        echo json_encode(array("message" => "Login successful", "user" => $user));
+                        echo json_encode(array("message" => "Login successful"));
                     } else {
                         http_response_code(401); 
                         echo json_encode(array("message" => "Login failed"));

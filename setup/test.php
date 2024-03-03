@@ -7,8 +7,8 @@ require_once 'config.php';
 extract($db_config);
 
 $sampleData = array(
-    array('John Doe', 'password123', 'customer', 'individual'),
-    array('Jane Smith', 'pass456', 'company', 'company')
+    array('Ben', 'password123', 'customer', 'individual'),
+    array('Esther', 'pass456', 'company', 'company')
 );
 
 try {
@@ -19,12 +19,36 @@ try {
     $stmt = $pdo->prepare($sql);
 
     foreach ($sampleData as $data) {
-        $stmt->bindParam(':username', $data[0]);
-        $stmt->bindParam(':password', $data[1]);
-        $stmt->bindParam(':role', $data[2]);
-        $stmt->bindParam(':user_type', $data[3]);
+        $username = $data[0];
+        $password = password_hash($data[1], PASSWORD_DEFAULT);
+        $role = $data[2];
+        $user_type = $data[3];
+    
+        $stmt->bindParam(':username', $username);
+        $stmt->bindParam(':password', $password);
+        $stmt->bindParam(':role', $role);
+        $stmt->bindParam(':user_type', $user_type);
         $stmt->execute();
     }
+    
+
+    $make = 'Toyota';
+    $model = 'Corola';
+    $year = 2020;
+    $type = 'Sedan';
+    $availability = true;
+    $paymentAmount = 100.00;
+
+    $userId = 4; 
+    $stmt = $pdo->prepare("INSERT INTO cars (user_id, make, model, year, type, availability, payment_amount) VALUES (:userId, :make, :model, :year, :type, :availability, :paymentAmount)");
+    $stmt->bindParam(':userId', $userId);
+    $stmt->bindParam(':make', $make);
+    $stmt->bindParam(':model', $model);
+    $stmt->bindParam(':year', $year);
+    $stmt->bindParam(':type', $type);
+    $stmt->bindParam(':availability', $availability);
+    $stmt->bindParam(':paymentAmount', $paymentAmount);
+    $stmt->execute();
 
     echo "Static data inserted successfully.";
 } catch (PDOException $e) {
