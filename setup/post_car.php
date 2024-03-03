@@ -11,7 +11,6 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     if (session_status() == PHP_SESSION_NONE) {
-
         session_start();
     }
 
