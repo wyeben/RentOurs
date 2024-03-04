@@ -19,8 +19,10 @@ try {
         username VARCHAR(50) NOT NULL,
         password VARCHAR(255) NOT NULL,
         role ENUM('customer', 'company', 'admin') NOT NULL,
-        user_type ENUM('individual', 'company') NOT NULL
+        user_type ENUM('individual', 'company') NOT NULL,
+        profile_picture VARCHAR(255) DEFAULT NULL
     );
+    
     
     CREATE TABLE IF NOT EXISTS Companies (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,

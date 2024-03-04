@@ -102,7 +102,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if (registerUser($data->username, password_hash($data->password, PASSWORD_DEFAULT), $data->role, $data->user_type)) {
                         echo json_encode(array("message" => "Registration successful"));
                     } else {
-                        http_response_code(500); 
+                        http_response_code(500);
                         echo json_encode(array("message" => "Registration failed"));
                     }
                 }
@@ -116,10 +116,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         session_start();
 
                         $_SESSION['user_id'] = $user['id'];
-                        echo json_encode(array("message" => "Login successful"));
+                        echo json_encode(array("message" => "Login successful", "User" => $user));
+                    
                     } else {
                         http_response_code(401); 
-                        echo json_encode(array("message" => "Login failed"));
+                        echo json_encode(array("message" => "Invalid username or password"));
                     }
                 }
             } elseif ($action == "bookCar") {
@@ -176,16 +177,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo json_encode(array("message" => "Internal Server Error: " . $e->getMessage()));
     }
 } elseif ($_SERVER["REQUEST_METHOD"] == "GET") {
-    if ($_GET['action'] == 'searchCars') {
-        $make = isset($_GET['make']) ? $_GET['make'] : null;
-        $model = isset($_GET['model']) ? $_GET['model'] : null;
-        $year = isset($_GET['year']) ? $_GET['year'] : null;
-    
-        $results = searchAvailableCars($make, $model, $year);
-        echo json_encode($results);
+    if (isset($_GET['action'])) {
+        $action = $_GET['action'];
+        if ($action == 'searchCars') {
+            $make = isset($_GET['make']) ? $_GET['make'] : null;
+            $model = isset($_GET['model']) ? $_GET['model'] : null;
+            $year = isset($_GET['year']) ? $_GET['year'] : null;
+        
+            $results = searchAvailableCars($make, $model, $year);
+            echo json_encode($results);
+        } elseif ($action == 'viewAvailableCars') {
+            $availableCars = getAvailableCars();
+            echo json_encode($availableCars);
+        } else {
+            http_response_code(405); 
+            echo json_encode(array("message" => "Method not allowed"));
+        }
     } else {
-        http_response_code(405); 
-        echo json_encode(array("message" => "Method not allowed"));
+        http_response_code(400); 
+        echo json_encode(array("message" => "Action parameter missing"));
     }
 } else {
     http_response_code(405); 
@@ -237,8 +247,6 @@ function postCar($make, $model, $year, $type, $availability, $paymentAmount) {
     echo json_encode(array("message" => "Car listing posted successfully."));
 }
 
-
-
 function searchAvailableCars($make, $model, $year) {
     global $pdo;
     
@@ -264,6 +272,13 @@ function searchAvailableCars($make, $model, $year) {
 
     $stmt->execute($params);
     
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getAvailableCars() {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM cars WHERE availability = 1");
+    $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
