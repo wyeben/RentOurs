@@ -35,7 +35,7 @@ try {
         $targetFile = $uploadDirectory . $fileName;
 
         if (move_uploaded_file($tempFile, $targetFile)) {
-            
+        
             $stmt = $pdo->prepare("INSERT INTO car_pictures (user_id, file_name) VALUES (:userId, :fileName)");
             $stmt->bindParam(':userId', $userId);
             $stmt->bindParam(':fileName', $fileName);
