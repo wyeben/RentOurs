@@ -18,7 +18,7 @@ try {
         $data = json_decode(file_get_contents("php://input"));
 
         if (!$data) {
-        
+    
             http_response_code(400);
             echo json_encode(array("message" => "Invalid JSON data"));
             exit();
