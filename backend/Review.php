@@ -20,7 +20,7 @@ class Review {
     }
     
     public function getAuthor() {
-        
+    
         return $this->author;
     }
     
