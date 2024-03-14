@@ -153,7 +153,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $missingParams = array_diff($requiredParams, array_keys((array) $data));
                 
                     if (!empty($missingParams)) {
-            
+        
                         http_response_code(400);
                         echo json_encode(array("message" => "Missing required parameters: " . implode(", ", $missingParams)));
                     } else {
