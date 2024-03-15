@@ -280,7 +280,7 @@ function getAvailableCars() {
     global $pdo;
     $stmt = $pdo->prepare("SELECT * FROM cars WHERE availability = 1");
     $stmt->execute();
-    
+
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
