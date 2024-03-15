@@ -241,7 +241,7 @@ function postCar($make, $model, $year, $type, $availability, $paymentAmount) {
     $stmt->bindParam(':type', $type);
     $stmt->bindParam(':availability', $availability);
     $stmt->bindParam(':paymentAmount', $paymentAmount);
-    
+
     $stmt->execute();
 
     http_response_code(201); 
