@@ -239,7 +239,7 @@ function postCar($make, $model, $year, $type, $availability, $paymentAmount) {
     $stmt->bindParam(':model', $model);
     $stmt->bindParam(':year', $year);
     $stmt->bindParam(':type', $type);
-
+    
     $stmt->bindParam(':availability', $availability);
     $stmt->bindParam(':paymentAmount', $paymentAmount);
     $stmt->execute();
