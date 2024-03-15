@@ -153,7 +153,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $missingParams = array_diff($requiredParams, array_keys((array) $data));
                 
                     if (!empty($missingParams)) {
-    
                         http_response_code(400);
                         echo json_encode(array("message" => "Missing required parameters: " . implode(", ", $missingParams)));
                     } else {
@@ -166,7 +165,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 
                         postCar($userId, $make, $model, $year, $type, $availability, $paymentAmount);
                     }
-                
+
             }
             else {
                 http_response_code(400); 
@@ -242,6 +241,7 @@ function postCar($make, $model, $year, $type, $availability, $paymentAmount) {
     $stmt->bindParam(':type', $type);
     $stmt->bindParam(':availability', $availability);
     $stmt->bindParam(':paymentAmount', $paymentAmount);
+    
     $stmt->execute();
 
     http_response_code(201); 
